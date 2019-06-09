@@ -14,6 +14,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.Lab28.WeatherAPI.WeatherAPI.entity.City;
 import com.Lab28.WeatherAPI.WeatherAPI.entity.Weather;
+import com.Lab28.WeatherAPI.WeatherAPI.entity.webcam.WebCamHolder;
 import com.Lab28.WeatherAPI.WeatherAPI.helper.LocationHelp;
 
 @Controller
@@ -42,6 +43,14 @@ public class WeatherController {
 		String locUrl = "https://devru-latitude-longitude-find-v1.p.rapidapi.com/latlon.php?location=" + cityString;
 		ResponseEntity<City> locResponse = restTemplate.exchange(locUrl, HttpMethod.GET, locationEntity, City.class);
 		
+		//get webcam image nearby
+		String webCamUrl= "https://webcamstravel.p.rapidapi.com/webcams/list/nearby="+locResponse.getBody().getResults().get(0).get("lat")+
+				","+locResponse.getBody().getResults().get(0).get("lon")+",20?lang=en&show=webcams:image,location,player";
+		HttpHeaders headersWebCam = new HttpHeaders();
+		headersWebCam.add("X-RapidAPI-Key", locationKey);
+		HttpEntity<String> webCamEntity = new HttpEntity<>("parameters", headersWebCam);
+		ResponseEntity<WebCamHolder> webCamResponse = restTemplate.exchange(webCamUrl, HttpMethod.GET, webCamEntity, WebCamHolder.class);
+		//System.out.println(webCamResponse.getBody().getResult().getWebcams().get(0).getPlayer().getDay().getEmbed());
 		
 		// get headers and info for weather
 		HttpHeaders headers = new HttpHeaders();
@@ -51,6 +60,8 @@ public class WeatherController {
 				+"&lon="+locResponse.getBody().getResults().get(0).get("lon")+"&FcstType=json";
 		ResponseEntity<Weather> response = restTemplate.exchange(url, HttpMethod.GET, weatherEntity, Weather.class);
 		// add objects to model and view
+		mv.addObject("vid",webCamResponse.getBody().getResult().getWebcams());
+		mv.addObject("img", webCamResponse.getBody().getResult().getWebcams());
 		mv.addObject("loc", locResponse.getBody().getResults().get(0).get("name"));
 		mv.addObject("weather", response.getBody());
 		return mv;
